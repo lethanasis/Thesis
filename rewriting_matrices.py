@@ -52,7 +52,7 @@ Te=2
 Z = Zeff(ions, ne)
 
 
-def construct_Jacobian(ions: IonHandler, ne, Te, Z, fre=None, V_plasma =1, V_vessel =1):
+def construct_Jacobian(ions: IonHandler, ne, Te, Z, fre=fre, V_plasma =1, V_vessel =1):
     N = ions.getNumberOfStates()+2
     J = np.zeros((N,N))
     e = scipy.constants.e
@@ -115,14 +115,14 @@ def construct_Jacobian(ions: IonHandler, ne, Te, Z, fre=None, V_plasma =1, V_ves
             if j > 0 and j < ion.Z :
                 J[off+j, N-2] += ne*(dIdne(j-1)*ion.solution[j-1] - dIdne(j)*ion.solution[j] + dRdne(j+1)*ion.solution[j+1] - dRdne(j)*ion.solution[j]) + \
                 I(j-1) * ion.solution[j-1] - I(j) * ion.solution[j] + R(j+1)*ion.solution[j+1] - R(j)*ion.solution[j]
-                J[off+j, N-1] += dIdT(j-1)*ne*ion.solution[j-1] - dIdT(j)*ne*ion.solution[j] + dRdT(j+1)*ion.solution[j+1] - dRdT(j)*ion.solution[j]
+                J[off+j, N-1] += dIdT(j-1)*ne*ion.solution[j-1] - dIdT(j)*ne*ion.solution[j] + dRdT(j+1)*ne*ion.solution[j+1] - dRdT(j)*ne*ion.solution[j]
             elif j==0 :
                 J[off+j, N-2] +=  ne*(-dIdne(j)*ion.solution[j] + dRdne(j+1)*ion.solution[j+1] - dRdne(j)*ion.solution[j]) - I(j)*ion.solution[j] + R(j+1)*ion.solution[j+1] - R(j)*ion.solution[j]
                 J[off+j, N-1] += - dIdT(j)*ne*ion.solution[j] + dRdT(j+1)*ne*ion.solution[j+1] - dRdT(j)*ne*ion.solution[j]
                 
             elif j==ion.Z:
                 J[off+j, N-2] += ne*(dIdne(j-1)*ion.solution[j-1] - dIdne(j)*ion.solution[j] - dRdne(j)*ion.solution[j]) + I(j-1)*ion.solution[j-1] - I(j) * ion.solution[j] - R(j)*ion.solution[j]
-                J[off+j, N-1] += dIdT(j-1)*ne*ion.solution[j-1] - dIdT(j)*ne*ion.solution[j] - dRdne(j)*ne*ion.solution[j]
+                J[off+j, N-1] += dIdT(j-1)*ne*ion.solution[j-1] - dIdT(j)*ne*ion.solution[j] - dRdT(j)*ne*ion.solution[j]
             
             if fre is not None:
                 if j < ion.Z:
@@ -188,7 +188,7 @@ def construct_Jacobian(ions: IonHandler, ne, Te, Z, fre=None, V_plasma =1, V_ves
     
     return J
 
-def construct_F(ions: IonHandler, ne, Te, Z, fre=None):
+def construct_F(ions: IonHandler, ne, Te, Z, fre=fre):
     N = ions.getNumberOfStates()+2
     F = np.zeros((N,))
     Ec = getEc(Te, ne)
@@ -235,3 +235,70 @@ def construct_F(ions: IonHandler, ne, Te, Z, fre=None):
 
 testJ = construct_Jacobian(ions, ne, Te, Z)
 testF = construct_F(ions, ne, Te, Z)
+
+
+''' Testing the power balance respond to temperatures'''
+# =============================================================================
+# 
+# Te_arr = np.linspace(2.28,2.3,100)
+# dat1 = []
+# dat2 = []
+# dat3 = []
+# dat4 = []
+# dat5 = []
+# dat6=[]
+# dat7=[]
+# 
+# e=scipy.constants.e
+# c=scipy.constants.c
+# for Te in Te_arr:
+#     
+#     ne=0
+#     nfree, n = ionrate.equilibriumAtPressure(ions, 0.1, Te, Te*e, fre)
+#     ions.setSolution(n)
+#     for ion in ions:
+#         for j in range(ion.Z+1):
+#             ne += ion.solution[j]
+# # =============================================================================
+# #             if ion.name == 'Ne':
+# #                 print(f'Deuterium density is {ion.n}')
+# # =============================================================================
+#     Prad, Prad_prime = RadiationLosses(ions, ne, Te)
+#     Ptransp, Ptransp_prime = Transport(ions, Di, 0.25*1.2, Te, Tw=0.025)
+#     print(f'Electron density is {ne}')
+#     #print(n)
+#     Ec = getEc(Te, ne)
+#     sigma = evaluateBraamsConductivity(ne, Te, Z)
+#     dat1.append(e*c*NRE*Ec)
+#     dat2.append(Prad)
+#     dat3.append(Ptransp)
+#     dat4.append(sigma*(Ec**2))
+#     dat5.append(e*c*NRE*Ec+sigma*(Ec**2) - Prad - Ptransp)
+#     dat6.append(n[0])
+#     dat7.append(n[2])
+# dat1 = np.array(dat1)
+# dat2 = np.array(dat2)
+# dat3 = np.array(dat3)
+# dat4 = np.array(dat4)
+# dat5 = np.array(dat5)
+# dat6 = np.array(dat6)
+# dat7 = np.array(dat7)
+# 
+# #print(Prad)
+# #print(test)
+# #plt.plot(Te_arr, dat1,label='Heating')
+# #plt.plot(Te_arr, dat2,label='losses')
+# #plt.plot(Te_arr, dat3,label='Neutral transport')
+# #plt.plot(Te_arr, dat4, label = 'Ohmic heating')
+# plt.plot(Te_arr,dat5, linestyle = '--' ,label = 'Power Balance')
+# # =============================================================================
+# # plt.plot(Te_arr, dat6)
+# # plt.plot(Te_arr, dat7)
+# # =============================================================================
+# plt.legend()
+# #plt.yscale('symlog')
+# plt.grid(True)
+# #plt.yticks([-1e9, -1e6, -1e3, 0, 1e3, 1e6, 1e9])
+# 
+# =============================================================================
+
